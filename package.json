@@ -1,0 +1,16 @@
+{
+  "name": "cbt-server",
+  "version": "1.0.0",
+  "description": "Graphql server for cognitive-behavioural-therapy diary app",
+  "main": "index.js",
+  "repository": "https://github.com/jovandamjanovic/cbt-server.git",
+  "author": "Jovan Damjanovic <jovandamjanovic@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "apollo-server-express": "^2.4.8",
+    "express": "^4.16.4",
+    "graphql": "^14.1.1",
+    "mongoose": "^5.4.16",
+    "nodemon": "^1.18.10"
+  }
+}
