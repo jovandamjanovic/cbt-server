@@ -1,12 +1,12 @@
 const { ApolloServer, gql } = require('apollo-server-express')
-const { User } = require('./models.js');
+const { User, Entry } = require('./models.js');
 const bcrypt = require('bcrypt');
 const jsonwebtoken = require('jsonwebtoken');
 require('dotenv').config;
 
 const typeDefs = gql`
       type User {
-        id: Int!
+        _id: String!
         username: String!
         email: String!
         password: String!
@@ -14,7 +14,8 @@ const typeDefs = gql`
       }
 
       type Entry {
-        user: User!
+        _id: String!
+        creator: String!
         dateTime: String!
         event: String!
         evaluation: String!
@@ -26,15 +27,23 @@ const typeDefs = gql`
       type Query {
         me: User
         users: [User]
+        entries: [Entry]
       }
 
       type Mutation {
         signup (username: String!, email: String!, password: String!): String
         login (email: String!, password: String!): String
+        addEntry (event: String!, evaluation: String!, emotion: String!, alternative: String!, alternativeEmotion: String!): String
+        removeEntry (id: String!): String
       }
     `
 
 const resolvers = {
+    User: {
+        async entries(user) {
+            return await Entry.find({creator: user._id});
+        }
+    },
     Query: {
         async me(_, args, { user }) {
             if (!user) {
@@ -44,6 +53,9 @@ const resolvers = {
         },
         async users(_, args) {
             return await User.find({});
+        },
+        async entries(_, args) {
+            return await Entry.find({});
         }
     },
     Mutation: {
@@ -54,7 +66,7 @@ const resolvers = {
                     email,
                     password: await bcrypt.hash(password, 10)
                 })
-                return jsonwebtoken.sign({ id: user.id, email: user.email }, 'amoderatelylongjwtsecret', { expiresIn: '1d' });
+                return jsonwebtoken.sign({ id: user._id, email: user.email}, 'amoderatelylongjwtsecret', { expiresIn: '1d' });
             } catch (error) {
                 console.log(error);
             }
@@ -69,7 +81,23 @@ const resolvers = {
             if (!valid) {
                 throw new Error('Incorrect password!');
             }
-            return jsonwebtoken.sign({ id: user.id, email: user.email }, 'amoderatelylongjwtsecret', { expiresIn: '1d' });
+            return jsonwebtoken.sign({ id: user._id, email: user.email}, 'amoderatelylongjwtsecret', { expiresIn: '1d' });
+        },
+        async addEntry(_, { event, evaluation, emotion, alternative, alternativeEmotion }, { user }) {
+            if (!user) {
+                throw new Error('You are not authenticated');
+            }
+            const creator = await User.findOne({ email: user.email });
+            const entry = await Entry.create({
+                creator: creator._id,
+                dateTime: new Date(),
+                event,
+                evaluation,
+                emotion,
+                alternative,
+                alternativeEmotion
+            });
+            return entry._id;
         }
     }
 }
